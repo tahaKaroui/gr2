@@ -96,8 +96,13 @@ class DeterministicNNPolicy(NNPolicy, Serializable):
 
     def get_actions(self, observations):
         feeds = {self._observation_ph: observations}
+        # Taha: tf.get_default_session() returns the session set to default or None
+        # Taha: The run method of a Session object is used to execute operations in the graph.
+        # Taha: The feed_dict argument is used to feed tensors to the graph, and the options argument
+        # can be used to specify options for the run, such as the target device to use for execution.
         actions = tf.get_default_session().run(self._action, feeds)
         # return actions
+        # u range is
         return np.clip(actions + self._u_range * self.noise_level * self.evolve_noise_state(), -self._u_range, self._u_range)
 
     def actions_for(self, observations, reuse=False):

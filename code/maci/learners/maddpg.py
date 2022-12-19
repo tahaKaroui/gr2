@@ -110,20 +110,38 @@ class MADDPG(MARLAlgorithm):
             self.policy.set_param_values(saved_policy_params)
 
     def _create_placeholders(self):
-        """Create all necessary placeholders."""
+        """Create all necessary placeholders.
+        Placeholders are typically used in the following situations:
+
+        When you want to train a machine learning model using a dataset that is too large to fit in memory.
+        You can use placeholders to feed small batches of data to the model during training, rather than loading
+        the entire dataset into memory.
+
+        When you want to evaluate a model on a large dataset and need to process the data in smaller batches. Y
+        ou can use placeholders to feed the data to the model in batches, rather than processing the entire dataset at once.
+
+        When you want to define a computation graph that takes input data from an external source, such as a user or a sensor.
+        You can use placeholders to define the input data and feed actual values to the graph as they become available.
+
+        Overall, placeholders are a useful tool for working with input data in TensorFlow, and are often used to build
+        machine learning models and other computations that take input data.
+
+"""
 
         self._observations_ph = tf.placeholder(
             tf.float32,
             shape=[None, self._observation_dim],
             name='observations_agent_{}'.format(self._agent_id))
-
+        
         self._next_observations_ph = tf.placeholder(
             tf.float32,
             shape=[None, self._observation_dim],
             name='next_observations_agent_{}'.format(self._agent_id))
+        
         self._actions_pl = tf.placeholder(
             tf.float32, shape=[None, self._action_dim],
             name='actions_agent_{}'.format(self._agent_id))
+        
         self._next_actions_ph = tf.placeholder(
             tf.float32, shape=[None, self._action_dim],
             name='next_actions_agent_{}'.format(self._agent_id))
@@ -132,6 +150,7 @@ class MADDPG(MARLAlgorithm):
             self._opponent_actions_pl = tf.placeholder(
                 tf.float32, shape=[None, self._opponent_action_dim],
                 name='opponent_actions_agent_{}'.format(self._agent_id))
+            
             self._opponent_next_actions_ph = tf.placeholder(
                 tf.float32, shape=[None, self._opponent_action_dim],
                 name='opponent_next_actions_agent_{}'.format(self._agent_id))
@@ -140,6 +159,7 @@ class MADDPG(MARLAlgorithm):
             self._recent_opponent_observations_ph = tf.placeholder(
                 tf.float32,shape=[None, self._observation_dim],
                 name='recent_opponent_observations_agent_{}'.format(self._agent_id))
+            
             self._recent_opponent_actions_pl = tf.placeholder(
                 tf.float32, shape=[None, self._opponent_action_dim],
                 name='recent_opponent_actions_agent_{}'.format(self._agent_id))
