@@ -154,6 +154,44 @@ class SimpleSampler(Sampler):
 
 
 class MASampler(SimpleSampler):
+    """
+The MASampler class is a subclass of SimpleSampler, which is a class for collecting samples from an environment using a
+given set of policies. MASampler stands for "Multi-Agent Sampler", and it is used for sampling from an environment with
+multiple agents.
+
+In the __init__ method, the superclass SimpleSampler is initialized using the **kwargs syntax, which allows the method
+to accept any additional keyword arguments that might be defined in the superclass. The __init__ method of MASampler then
+initializes some additional attributes:
+
+self.agent_num: the number of agents in the environment
+self.joint: a boolean indicating whether the replay buffer should store information about the actions of all agents (True)
+or only the actions of a single agent (False)
+self._path_length: the length of the current path, i.e. the number of steps taken in the environment since the last reset
+self._path_return: an array storing the accumulated rewards for each agent at the current path
+self._last_path_return: an array storing the accumulated rewards for each agent at the previous path
+self._max_path_return: an array storing the maximum accumulated rewards for each agent across all paths
+self._n_episodes: the number of episodes (i.e. environment resets) that have occurred during the sampling process
+self._total_samples: the total number of samples collected during the sampling process
+self._current_observation_n: the current observations for each agent
+self.env: the environment used for sampling
+self.agents: the agents used for sampling
+The set_policy method allows you to set the policy for each of the agents. It takes a list of policies as input,
+and assigns each policy to the corresponding agent.
+
+The batch_ready method returns True if there are at least self._min_pool_size samples in the replay buffer of each
+of the agents, and False otherwise. The self._min_pool_size attribute is defined in the superclass SimpleSampler and
+determines the minimum number of samples that need to be present in the replay buffer before the sampling process can start.
+
+The random_batch method returns a random batch of self._batch_size samples from the replay buffer of the agent with the
+given index. The self._batch_size attribute is also defined in the superclass SimpleSampler and determines the number of
+samples to be included in each batch.
+
+The initialize method is used to set the environment and the agents that will be used in the sampling process. It takes
+an env object and a list of agents as input, and assigns them to the corresponding attributes of the MASampler instance.
+
+The sample method is used to collect samples from the environment. It first determines the actions to be taken by each
+of the agents based on their current policies and observations. It does this by calling the get_action method of the policy object for each agent, passing the current observation as input. If the agent has a joint policy (i.e. a policy that takes into account the actions of all other agents), it takes only the first agent._action_dim elements of the action
+    """
     def __init__(self, agent_num, joint, **kwargs):
         super(SimpleSampler, self).__init__(**kwargs)
         self.agent_num = agent_num

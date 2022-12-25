@@ -247,7 +247,12 @@ class ConditionalDeterministicNNPolicy(NNPolicy, Serializable):
     
 
 class DeterministicToMNNPolicy(NNPolicy, Serializable):
-    """Deterministic neural network policy."""
+    """Deterministic neural network policy.
+    The DeterministicNNPolicy class appears to define a policy for an actor that uses a deterministic neural network to
+    take actions. The get_action and get_actions methods allow the actor to produce actions for a given observation or
+    a batch of observations, respectively. It is not clear from the provided code whether this class is being used to
+    define the policy for the critic as well.
+    """
 
     def __init__(self,
                  env_spec=None,
@@ -277,7 +282,7 @@ class DeterministicToMNNPolicy(NNPolicy, Serializable):
             if joint:
                 self._action_dim = env_spec.action_space.flat_dim
                 if opponent_policy:
-                    print('opponent_policy',opponent_policy)
+                    print('opponent_policy', opponent_policy)
                     self._action_dim = env_spec.action_space.opponent_flat_dim(agent_id)
             else:
                 self._action_dim = env_spec.action_space[agent_id].flat_dim
@@ -289,7 +294,7 @@ class DeterministicToMNNPolicy(NNPolicy, Serializable):
         print(self._layer_sizes)
         self._squash = squash
         self._squash_func = squash_func
-        self.opponent_act_policy=opponent_act_policy
+        self.opponent_act_policy = opponent_act_policy
         self.agent_id = agent_id
         self._u_range = u_range
         self.shift = shift
@@ -338,6 +343,7 @@ class DeterministicToMNNPolicy(NNPolicy, Serializable):
 
     def actions_for(self, observations, reuse=False):
         opponent_actions_ = self.cond_policy.actions_for(observations)
+        print(f'Taha: opponent actions: {opponent_actions_}')
         
         with tf.variable_scope(self._name, reuse=reuse):
             raw_actions = feedforward_net(
@@ -353,5 +359,11 @@ class DeterministicToMNNPolicy(NNPolicy, Serializable):
         if (self.shift is not None) and (self.scale is not None) and self._squash:
             tf.scalar_mul(self.scale, self._squash_func(raw_actions) + self.shift)
         print('deterministic', self._u_range, self._squash, self._squash_func)
+
+        # Taha:
+        if not self._squash:
+            print(f'Taha: : actions? {tf.clip_by_value(raw_actions, -self._u_range, self._u_range)}')
+        else:
+            print(f'Taha: : actions? {tf.scalar_mul(self._u_range, self._squash_func(raw_actions))}')
 
         return tf.scalar_mul(self._u_range, self._squash_func(raw_actions)) if self._squash else tf.clip_by_value(raw_actions, -self._u_range, self._u_range)

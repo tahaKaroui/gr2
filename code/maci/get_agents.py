@@ -54,6 +54,40 @@ def masql_agent(model_name, i, env, M, u_range, base_kwargs, game_name='matrix')
 
 
 def get_level_k_policy(env, k, M, agent_id, u_range, opponent_conditional_policy, game_name='pbeauty'):
+    """
+    Taha:
+    This function appears to define and return two MultiLevelPolicy objects: one called k_policy and the other called
+    target_k_policy. These objects are used to represent policies for agents in a multi-agent environment.
+
+    The MultiLevelPolicy class is a type of policy that models the decision-making process of an agent in a multi-agent
+    environment as a hierarchy of policies. At each level of the hierarchy, the agent can either choose a simple base
+    policy or a more complex conditional policy, which takes into account the actions and observations of other agents.
+    The k parameter specifies the number of levels in the hierarchy.
+
+    The function takes several arguments as input:
+
+    env: an environment object, which specifies the characteristics of the environment in which the agents operate.
+    k: an integer representing the number of levels in the hierarchy of policies for each agent.
+    M: an integer representing the size of the hidden layers of the neural networks used to define the conditional policies.
+    agent_id: an integer representing the unique identifier of the agent for whom the policies are being defined.
+    u_range: a tuple specifying the range of valid actions for the agent.
+    opponent_conditional_policy: a conditional policy object representing the policy of an opponent of the agent.
+    game_name: a string representing the name of the game being played.
+    The function first defines several variables based on the value of game_name. Then, it creates a base policy object
+    called base_policy using the UniformPolicy class. This base policy represents a simple policy that uniformly selects
+    actions from the specified range.
+
+    The function then creates a conditional policy object called conditional_policy using the
+    ConditionalDeterministicNNPolicy class. This policy represents a more complex policy that is learned through training
+    and takes into account the actions and observations of other agents.
+
+    Finally, the function creates two MultiLevelPolicy objects: k_policy and target_k_policy. These objects represent the
+    hierarchy of policies for the agent, with k levels and the specified base and conditional policies.
+    The target_k_policy object is created using the same parameters as k_policy, but with the tf.variable_scope set to
+    'target_levelk_{}'.format(agent_id) to allow for separate variable scopes for the two policies.
+    The function returns both k_policy and target_k_policy as output.
+        """
+
     urange = [-1, 1.]
     if_softmax = False
     if 'particle' in game_name:
@@ -112,7 +146,7 @@ def pr2ac_agent(model_name, i, env, M, u_range, base_kwargs, k=0, g=False, mu=1.
     opponent_conditional_policy = StochasticNNConditionalPolicy(env.env_specs,
                                                        hidden_layer_sizes=(M, M),
                                                        name='opponent_conditional_policy',
-                                                       squash=squash, squash_func=squash_func,sampling=sampling, u_range=u_range, joint=joint,
+                                                       squash=squash, squash_func=squash_func, sampling=sampling, u_range=u_range, joint=joint,
                                                        agent_id=i)
 
 
@@ -129,13 +163,13 @@ def pr2ac_agent(model_name, i, env, M, u_range, base_kwargs, k=0, g=False, mu=1.
         if k == 0:
             policy = DeterministicNNPolicy(env.env_specs,
                                            hidden_layer_sizes=(M, M),
-                                           squash=squash, squash_func=squash_func, sampling=sampling,u_range=u_range, joint=False,
-                                           agent_id=i)
+                                           squash=squash, squash_func=squash_func, sampling=sampling, u_range=u_range,
+                                           joint=False, agent_id=i)
             target_policy = DeterministicNNPolicy(env.env_specs,
                                                   hidden_layer_sizes=(M, M),
                                                   name='target_policy',
-                                                  squash=squash, squash_func=squash_func, sampling=sampling,u_range=u_range, joint=False,
-                                                  agent_id=i)
+                                                  squash=squash, squash_func=squash_func, sampling=sampling,
+                                                  u_range=u_range, joint=False, agent_id=i)
         if k > 0:
             policy, target_policy = get_level_k_policy(env, k, M, i, u_range, opponent_conditional_policy, game_name=game_name)
 
