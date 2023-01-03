@@ -7,7 +7,22 @@ from maci.environments.env_spec import MAEnvSpec
 
 
 class SimpleReplayBuffer(ReplayBuffer, Serializable):
+    """
+    SimpleReplayBuffer is a class that implements a replay buffer for reinforcement learning (RL). A replay buffer is a
+    data structure that stores past transitions experienced by an RL agent, and allows the agent to sample these
+    transitions to train its model.
+    SimpleReplayBuffer is a simple and general-purpose replay buffer that can be used for many RL tasks. It can be
+    particularly useful in multi-agent RL settings, as it allows the agent to store and sample transitions involving
+    multiple agents.
+    """
     def __init__(self, env_spec, max_replay_buffer_size, joint=False, agent_id=None):
+        """
+        The __init__ method initializes the replay buffer with a specified maximum size and the environment
+        specification (env_spec). If env_spec is an instance of MAEnvSpec, the action and observation space dimensions
+        are extracted for the agent specified by agent_id. If joint is True, the action space dimensions for all other
+        agents are also extracted. The replay buffer stores observations, actions, rewards, terminals, and (optionally)
+        the actions of other agents.
+        """
         super(SimpleReplayBuffer, self).__init__()
         Serializable.quick_init(self, locals())
 
@@ -43,6 +58,9 @@ class SimpleReplayBuffer(ReplayBuffer, Serializable):
 
     def add_sample(self, observation, action, reward, terminal,
                    next_observation, **kwargs):
+        """
+        The add_sample() method adds a transition to the replay buffer.
+        """
         self._observations[self._top] = observation
         self._actions[self._top] = action
         self._rewards[self._top] = reward
@@ -55,6 +73,7 @@ class SimpleReplayBuffer(ReplayBuffer, Serializable):
         self._advance()
 
     def terminate_episode(self):
+        """The terminate_episode() method does nothing in this implementation."""
         pass
 
     def _advance(self):
@@ -63,6 +82,9 @@ class SimpleReplayBuffer(ReplayBuffer, Serializable):
             self._size += 1
 
     def random_batch(self, batch_size):
+        """
+        The random_batch() method samples a batch of transitions from the replay buffer.
+        """
         self.indices = np.random.randint(0, self._size, batch_size)
         batch = dict(
             observations=self._observations[self.indices],
@@ -76,6 +98,10 @@ class SimpleReplayBuffer(ReplayBuffer, Serializable):
         return batch
 
     def random_batch_by_indices(self, indices):
+        """
+         The random_batch_by_indices() method samples a batch of transitions from the replay buffer using a list of
+         specified indices.
+        """
         batch = dict(
             observations=self._observations[indices],
             actions=self._actions[indices],
