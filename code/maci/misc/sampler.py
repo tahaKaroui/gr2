@@ -226,7 +226,9 @@ of the agents based on their current policies and observations. It does this by 
         self.env = env
         self.agents = agents
 
-    def sample(self):
+    def sample(self, clusters: dict = None):
+        if clusters:
+            pass
         if self._current_observation_n is None:
             self._current_observation_n = self.env.reset()
         action_n = []
@@ -243,13 +245,14 @@ of the agents based on their current policies and observations. It does this by 
         self._total_samples += 1
 
         i = -1
-        for tahas_agents in self.agents.values():
+        for cluster, tahas_agents in enumerate(self.agents.values()):
             for agent in tahas_agents:
                 i += 1
                 action = deepcopy(action_n[i])
                 if agent.pool.joint:
                     opponent_action = deepcopy(action_n)
-                    del opponent_action[i]
+                    for _ in clusters[cluster]:
+                        del opponent_action[i]
                     opponent_action = np.array(opponent_action).flatten()
                     agent.pool.add_sample(observation=self._current_observation_n[i],
                                           action=action,
