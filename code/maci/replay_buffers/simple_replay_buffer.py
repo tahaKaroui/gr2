@@ -15,7 +15,7 @@ class SimpleReplayBuffer(ReplayBuffer, Serializable):
     particularly useful in multi-agent RL settings, as it allows the agent to store and sample transitions involving
     multiple agents.
     """
-    def __init__(self, env_spec, max_replay_buffer_size, joint=False, agent_id=None):
+    def __init__(self, env_spec, max_replay_buffer_size, joint=False, agent_id=None, _clusters=None):
         """
         The __init__ method initializes the replay buffer with a specified maximum size and the environment
         specification (env_spec). If env_spec is an instance of MAEnvSpec, the action and observation space dimensions
@@ -35,8 +35,7 @@ class SimpleReplayBuffer(ReplayBuffer, Serializable):
             self._observation_dim = env_spec.observation_space[agent_id].flat_dim
             self._action_dim = env_spec.action_space[agent_id].flat_dim
             if joint:
-                self._opponent_action_dim = env_spec.action_space.opponent_flat_dim(agent_id)
-                print(agent_id, self._opponent_action_dim )
+                self._opponent_action_dim = env_spec.action_space.opponent_flat_dim(agent_id, _not_joint=False, _clusters=_clusters)
                 self._opponent_actions = np.zeros((max_replay_buffer_size, self._opponent_action_dim ))
         else:
             self._action_dim = env_spec.action_space.flat_dim

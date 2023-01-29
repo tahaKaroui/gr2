@@ -9,7 +9,8 @@ from maci.policies.deterministic_policy import DeterministicNNPolicy, Conditiona
 from maci.policies.uniform_policy import UniformPolicy
 from maci.policies.level_k_policy import MultiLevelPolicy, GeneralizedMultiLevelPolicy
 
-def masql_agent(model_name, i, env, M, u_range, base_kwargs, game_name='matrix'):
+
+def masql_agent(model_name, i, env, M, u_range, base_kwargs, game_name='matrix', clusters_schema=None):
     joint = True
     squash = True
     squash_func = tf.tanh
@@ -18,15 +19,15 @@ def masql_agent(model_name, i, env, M, u_range, base_kwargs, game_name='matrix')
         sampling = True
         squash_func = tf.nn.softmax
 
-    pool = SimpleReplayBuffer(env.env_specs, max_replay_buffer_size=1e4, joint=joint, agent_id=i)
+    pool = SimpleReplayBuffer(env.env_specs, max_replay_buffer_size=1e4, joint=joint, agent_id=i, _clusters=clusters_schema)
     policy = StochasticNNPolicy(env.env_specs,
                                 hidden_layer_sizes=(M, M),
                                 squash=squash, squash_func=squash_func, sampling=sampling, u_range=u_range, joint=joint,
-                                agent_id=i)
+                                agent_id=i, _clusters=clusters_schema)
 
-    qf = NNQFunction(env_spec=env.env_specs, hidden_layer_sizes=[M, M], joint=joint, agent_id=i)
+    qf = NNQFunction(env_spec=env.env_specs, hidden_layer_sizes=[M, M], joint=joint, agent_id=i, _clusters=clusters_schema, not_target = True)
     target_qf = NNQFunction(env_spec=env.env_specs, hidden_layer_sizes=[M, M], name='target_qf', joint=joint,
-                            agent_id=i)
+                            agent_id=i, _clusters=clusters_schema)
 
     plotter = None
 
@@ -49,7 +50,8 @@ def masql_agent(model_name, i, env, M, u_range, base_kwargs, game_name='matrix')
         kernel_update_ratio=0.5,
         discount=0.99,
         reward_scale=1,
-        save_full_state=False)
+        save_full_state=False,
+        clusters_schema=clusters_schema)
     return agent
 
 
@@ -212,7 +214,7 @@ def pr2ac_agent(model_name, i, env, M, u_range, base_kwargs, k=0, g=False, mu=1.
     return agent
 
 
-def ddpg_agent(joint, opponent_modelling, model_name, i, env, M, u_range, base_kwargs, game_name='matrix'):
+def ddpg_agent(joint, opponent_modelling, model_name, i, env, M, u_range, base_kwargs, game_name='matrix', clusters_schema=None):
     # joint = True
     # opponent_modelling = False
     print(model_name)
@@ -225,7 +227,7 @@ def ddpg_agent(joint, opponent_modelling, model_name, i, env, M, u_range, base_k
         sampling = True
 
     print(joint, opponent_modelling)
-    pool = SimpleReplayBuffer(env.env_specs, max_replay_buffer_size=1e4, joint=joint, agent_id=i)
+    pool = SimpleReplayBuffer(env.env_specs, max_replay_buffer_size=1e4, joint=joint, agent_id=i, _clusters=clusters_schema)
 
     
         
@@ -261,9 +263,9 @@ def ddpg_agent(joint, opponent_modelling, model_name, i, env, M, u_range, base_k
                                           squash=squash, squash_func=squash_func,sampling=sampling, u_range=u_range,
                                           joint=False,
                                           agent_id=i)
-    qf = NNQFunction(env_spec=env.env_specs, hidden_layer_sizes=[M, M], joint=joint, agent_id=i)
+    qf = NNQFunction(env_spec=env.env_specs, hidden_layer_sizes=[M, M], joint=joint, agent_id=i, _clusters=clusters_schema, not_target = True)
     target_qf = NNQFunction(env_spec=env.env_specs, hidden_layer_sizes=[M, M], name='target_qf', joint=joint,
-                            agent_id=i)
+                            agent_id=i, _clusters=clusters_schema)
     plotter = None
 
     agent = MADDPG(
@@ -284,5 +286,6 @@ def ddpg_agent(joint, opponent_modelling, model_name, i, env, M, u_range, base_k
         td_target_update_interval=10,
         discount=0.99,
         reward_scale=0.1,
-        save_full_state=False)
+        save_full_state=False,
+        clusters_schema=clusters_schema)
     return agent

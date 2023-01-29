@@ -1,7 +1,7 @@
 import numpy as np
 import argparse
 
-from maci.learners import MAVBAC, MASQL
+from maci.learners import MAVBAC, MASQL, MADDPG
 from maci.misc.sampler import MASampler
 from maci.environments import PBeautyGame, MatrixGame
 from maci.environments import make_particle_env
@@ -32,7 +32,6 @@ def add_agents(names, desired_number):
         names: string coming from the arg list designing the names of the agents of each cluster separated by '-'
             between each adjacent clusters and '_' between agents in that cluster.
         desired_number: total number of agents desired
-
     """
     def add_final(clusters, cluster, agent):
         cluster.append(agent)
@@ -110,7 +109,7 @@ def parse_args():
     parser.add_argument('-re', "--repeat", type=bool, default=False, help="repeat or not")
     parser.add_argument('-a', "--aux", type=bool, default=True, help="")
     parser.add_argument('-m', "--model_names_setting", type=str,
-                        default='PR2AC4_PR2AC3_PR2AC2-MADDPG_MADDPG_MADDPG-DDPG_DDPG_DDPG-MASQL',
+                        default='PR2AC4_PR2AC3_PR2AC2-MADDPG_MADDPG_MADDPG-MASQL',
                         help="models setting agent vs adv")
     parser.add_argument('-c', "--number_of_clusters", type=int, default='3', help="number of clusters")
     return parser.parse_args()
@@ -131,7 +130,7 @@ def main(arglist):
         for _agent in range(agents_per_cluster):
             i += 1
             clusters_schema[_cluster].append(i)
-    print(clusters_schema)
+
 
     agent_names_per_cluster = add_agents(arglist.model_names_setting, agent_num)
     # agent_names_per_cluster = arglist.model_names_setting
@@ -194,7 +193,8 @@ def main(arglist):
     # the batch size refers to the number of samples or experiences used in each iteration of training the agent.
     batch_size = arglist.batch_size
     # Taha: The pool size, on the other hand, refers to the number of experiences or samples stored in the replay buffer
-    sampler = MASampler(agent_num=agent_num, joint=True, max_path_length=30, min_pool_size=100, batch_size=batch_size)
+    sampler = MASampler(agent_num=agent_num, joint=True, max_path_length=30, min_pool_size=100, batch_size=batch_size,
+                        clusters_schema=clusters_schema)
 
     base_kwargs = {
         'sampler': sampler,
@@ -208,8 +208,8 @@ def main(arglist):
     with U.single_threaded_session():
         i = -1
         for model in model_names:
-            i += 1
             for model_name in model:
+                i += 1
                 if 'PR2AC' in model_name:
                     cluster = "level-k"
                     if cluster not in agents.keys():
@@ -226,7 +226,7 @@ def main(arglist):
                     cluster = "masql"
                     if cluster not in agents.keys():
                         agents[cluster] = []
-                    agent = masql_agent(model_name, i, env, M, u_range, base_kwargs, game_name=game_name)
+                    agent = masql_agent(model_name, i, env, M, u_range, base_kwargs, game_name=game_name, clusters_schema=clusters_schema)
                 else:
                     if model_name == 'DDPG':
                         cluster = "ddpg"
@@ -247,7 +247,7 @@ def main(arglist):
                         joint = True
                         opponent_modelling = True
                     agent = ddpg_agent(joint, opponent_modelling, model_names, i, env, M, u_range, base_kwargs,
-                                       game_name=game_name)
+                                       game_name=game_name, clusters_schema=clusters_schema)
 
                 agents[cluster].append(agent)
 
@@ -393,8 +393,27 @@ def main(arglist):
                                 batch_n[i]['next_actions'] = deepcopy(target_next_actions_n[i])
                             except:
                                 pass
-                            batch_n[i]['opponent_actions'] = np.reshape(np.delete(deepcopy(opponent_actions_n), i, 0),
-                                                                        (-1, agent._opponent_action_dim))
+                            if isinstance(agent, MASQL) or isinstance(agent, MADDPG):
+                                try:
+                                    batch_n[i]['opponent_actions'] = np.reshape(
+                                        opponent_actions_n_dit,
+                                        (-1, agent._opponent_action_dim))
+                                except:
+                                    for _key, _cluster in clusters_schema.items():
+                                        if i in _cluster:
+                                            _cluster_key = _key
+                                    opponent_actions_n_dit = deepcopy(opponent_actions_n)
+                                    for _agent in clusters_schema[_cluster_key]:
+                                        try:
+                                            opponent_actions_n_dit = np.delete(opponent_actions_n_dit, _agent, 0)
+                                        except:
+                                            break
+                                    batch_n[i]['opponent_actions'] = np.reshape(
+                                            opponent_actions_n_dit,
+                                            (-1, agent._opponent_action_dim))
+                            else:
+                                batch_n[i]['opponent_actions'] = np.reshape(np.delete(deepcopy(opponent_actions_n), i, 0),
+                                                                            (-1, agent._opponent_action_dim))
                             if agent.joint:
                                 if agent.opponent_modelling:
                                     batch_n[i]['recent_opponent_observations'] = recent_opponent_observations_n[i]
@@ -405,7 +424,7 @@ def main(arglist):
                                         batch_n[i]['next_observations'])
                                 else:
                                     batch_n[i]['opponent_next_actions'] = np.reshape(
-                                        np.delete(deepcopy(target_next_actions_n), i, 0),
+                                        target_next_actions_n,
                                         (-1, agent._opponent_action_dim))
                             if isinstance(agent, MAVBAC) or isinstance(agent, MASQL):
                                 agent._do_training(iteration=t + epoch * agent._epoch_length, batch=batch_n[i],
